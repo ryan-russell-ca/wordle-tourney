@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./code
+    ports:
+      - 3000:3000
+    environment:
+      - SERVER_PORT=3000
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    volumes:
+      - ./code:/code:delegated
+    command: yarn dev
+  
+  postgres:
+    image: postgres:10.5
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - 5438:5432
+    volumes: 
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+   postgres-data:
