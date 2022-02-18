@@ -1,0 +1,36 @@
+@import "./../../styles/variables.scss";
+
+.row-container {
+  display: flex;
+  justify-content: center;
+
+  &.row-container-unlocked .row-word-input {
+    background-color: transparent;
+    border: 1px solid #555;
+    animation: none;
+  }
+
+  .row-word-input {
+    width: $height-game-square;
+    height: $height-game-square;
+    margin: $margin-game-square;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #444;
+
+    text-transform: uppercase;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: #eee;
+    transition: background-color 1s linear;
+
+    &.row-letter-in-word {
+      background-color: #b3aa39;
+    }
+
+    &.row-letter-in-place {
+      background-color: #33b035;
+    }
+  }
+}
