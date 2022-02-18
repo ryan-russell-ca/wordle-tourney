@@ -17,6 +17,7 @@
   "devDependencies": {
     "@prisma/migrate": "^3.9.2",
     "@types/react": "^17.0.39",
+    "@typescript-eslint/eslint-plugin": "^5.12.0",
     "eslint": "8.9.0",
     "eslint-config-next": "12.0.10",
     "sass": "^1.49.7",

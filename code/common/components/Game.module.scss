@@ -2,8 +2,9 @@
   display: flex;
   justify-content: center;
   flex-direction: column;
+  align-self: center;
 
   .game-table {
-
+    margin-bottom: 30px;
   }
 }

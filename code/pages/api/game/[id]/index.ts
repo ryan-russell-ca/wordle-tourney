@@ -1,18 +1,21 @@
-import { Game, GameEntries, PrismaClient } from '@prisma/client';
+import { Game, GameEntry, GameScore } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { clue, CluedLetter } from '../../../../common/utils/clue';
+import prisma from '../../../../common/utils/prisma';
+
+export interface GameDetailedResponse extends Game {
+  entries: (GameEntry & { letters: CluedLetter[] })[];
+  scores: GameScore[];
+}
 
 const handler = async (
   req: NextApiRequest,
-  res: NextApiResponse<
-    Game & { entries: (GameEntries & { letters: CluedLetter[] })[] }
-  >
+  res: NextApiResponse<GameDetailedResponse>,
 ) => {
-  const prisma = new PrismaClient();
   if (req.method === 'GET' && typeof req.query.id === 'string') {
     const game = await prisma.game.findFirst({
       where: { id: req.query.id },
-      include: { entries: true },
+      include: { entries: true, scores: true },
     });
 
     if (game) {

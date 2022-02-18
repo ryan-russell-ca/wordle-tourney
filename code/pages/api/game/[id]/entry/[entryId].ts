@@ -1,18 +1,18 @@
-import { GameEntries, PrismaClient } from '@prisma/client';
+import { GameEntry } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import prisma from '../../../../../common/utils/prisma';
 
 const handler = async (
   req: NextApiRequest,
-  res: NextApiResponse<GameEntries>
+  res: NextApiResponse<GameEntry>
 ) => {
-  const prisma = new PrismaClient();
   if (req.method === 'GET' && typeof req.query.entryId === 'string') {
-    const gameEntries = await prisma.gameEntries.findFirst({
+    const gameEntry = await prisma.gameEntry.findFirst({
       where: { id: req.query.entryId },
     });
 
-    if (gameEntries) {
-      res.status(200).json(gameEntries);
+    if (gameEntry) {
+      res.status(200).json(gameEntry);
       return;
     }
   }

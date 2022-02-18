@@ -1,6 +1,7 @@
-import { Game, PrismaClient } from '@prisma/client';
+import { Game } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import targets from '../../../common/libraries/targets';
+import prisma from '../../../common/utils/prisma';
 import { pick } from './../../../common/utils/functions';
 
 const randomTarget = (): string => {
@@ -12,7 +13,6 @@ const randomTarget = (): string => {
 }
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<Game>) => {
-  const prisma = new PrismaClient();
   if (req.method === 'POST') {
     const game = await prisma.game.create({
       data: {

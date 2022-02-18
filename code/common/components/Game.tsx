@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Row, RowState } from './Row';
+import Row, { RowState } from './Row';
 import dictionary from '../libraries/dictionary';
-import { Clue, clue, CluedLetter } from './../utils/clue';
+import { Clue, clue } from './../utils/clue';
 import { Keyboard } from './Keyboard';
 import styles from './Game.module.scss';
-import { post } from '../utils/fetch';
-import { GameEntries, Game as GameDb } from '@prisma/client';
+import { postEntry } from '../utils/fetch';
+import { addEntry, setEntries, useEntry } from '../providers/EntryProvider';
+import { addScores, setScores, useScore } from '../providers/ScoreProvider';
+import { GameDetailedResponse } from '../../pages/api/game/[id]';
+import { setMessages, useMessage } from '../providers/MessageProvider';
 
 enum GameState {
   Playing = 0,
@@ -15,88 +18,80 @@ enum GameState {
 
 interface GameProps {
   maxGuesses: number;
-  game: GameDb & { entries: Guess[] };
-}
-
-export interface Guess extends GameEntries {
-  letters: CluedLetter[];
+  game: GameDetailedResponse;
 }
 
 const WORD_LENGTH = 5;
 
 const Game = ({ maxGuesses, game }: GameProps) => {
-  const { solution, entries } = game;
-
-  console.log(entries);
+  const { solution } = game;
 
   const [gameState, setGameState] = useState(game.status);
-  const [guesses, setGuesses] = useState<Guess[]>(game.entries);
+  const [{ entries }, entryDispatch] = useEntry();
+  const [, scoreDispatch] = useScore();
+  const [, messageDispatch] = useMessage();
   const [currentGuess, setCurrentGuess] = useState<string>('');
-  const [hint, setHint] = useState<string>('Make your first guess!');
   const tableRef = useRef<HTMLTableElement>(null);
-  const startNextGame = () => {
-    setHint('');
-    setGuesses([]);
-    setCurrentGuess('');
-    setGameState(GameState.Playing);
-  };
-  console.log(solution, GameState.Playing, game);
+
+  useEffect(() => {
+    if (game.entries.length) {
+      setEntries(entryDispatch, game.entries);
+    }
+  }, [entryDispatch, game.entries]);
+
+  useEffect(() => {
+    if (game.scores.length) {
+      setScores(scoreDispatch, game.scores);
+    }
+  }, [game.scores, scoreDispatch]);
 
   const onKey = useCallback(
     async (key: string) => {
-      if (gameState !== GameState.Playing) {
-        if (key === 'Enter') {
-          startNextGame();
-        }
-        return;
-      }
-
-      if (guesses.length === maxGuesses) return;
+      if (entries.length === maxGuesses) return;
 
       if (/^[a-z]$/i.test(key)) {
         setCurrentGuess((guess) =>
           (guess + key.toLowerCase()).slice(0, WORD_LENGTH),
         );
         tableRef.current?.focus();
-        setHint('');
+        setMessages(messageDispatch, ['-']);
       } else if (key === 'Backspace') {
         setCurrentGuess((guess) => guess.slice(0, -1));
-        setHint('');
+        setMessages(messageDispatch, ['-']);
       } else if (key === 'Enter') {
         if (currentGuess.length !== WORD_LENGTH) {
-          setHint('Too short');
+          setMessages(messageDispatch, ['Too short']);
           return;
         }
         if (!dictionary.includes(currentGuess)) {
-          setHint('Not a valid word');
+          setMessages(messageDispatch, ['Not a valid word']);
           return;
         }
 
-        const currentGuesses = await post(`/api/game/${game.id}/entry`, {
-          row: guesses.length + 1,
+        const { entry, scores } = await postEntry(game.id, {
+          row: entries.length + 1,
           answer: currentGuess,
         });
-        const currentGuessesJson = await currentGuesses.json();
-        console.log(currentGuessesJson);
 
-        setGuesses(() => currentGuessesJson as Guess[]);
+        addEntry(entryDispatch, entry);
+        scores.length && addScores(scoreDispatch, scores);
         setCurrentGuess(() => '');
 
         const gameOver = (verbed: string) =>
-          `You ${verbed}! The answer was ${solution.toUpperCase()}. (Enter to ${'play again'})`;
+          `You ${verbed}! The answer was ${solution.toUpperCase()}`;
 
         if (currentGuess === solution) {
-          setHint(gameOver('won'));
+          setMessages(messageDispatch, [gameOver('won')]);
           setGameState(GameState.Won);
-        } else if (guesses.length + 1 === maxGuesses) {
-          setHint(gameOver('lost'));
+        } else if (entries.length + 1 === maxGuesses) {
+          setMessages(messageDispatch, [gameOver('lost')]);
           setGameState(GameState.Lost);
         } else {
-          setHint('');
+          setMessages(messageDispatch, ['-']);
         }
       }
     },
-    [currentGuess, gameState, guesses, maxGuesses, solution],
+    [entries.length, maxGuesses, messageDispatch, currentGuess, game.id, entryDispatch, scoreDispatch, solution],
   );
 
   useEffect(() => {
@@ -119,15 +114,15 @@ const Game = ({ maxGuesses, game }: GameProps) => {
     .fill(undefined)
     .map((_, i) => {
       const guess = [
-        ...guesses,
+        ...entries,
         {
           letters: clue(currentGuess, ''),
         },
       ][i] ?? { letters: clue('', '') };
-      console.log(guess);
 
-      const lockedIn = i < guesses.length;
-      if (lockedIn) {
+      const lockedIn = i < entries.length;
+
+      if (lockedIn && guess.letters) {
         for (const { clue, letter } of guess.letters) {
           if (clue === undefined) break;
           const old = letterInfo.get(letter);
@@ -136,18 +131,18 @@ const Game = ({ maxGuesses, game }: GameProps) => {
           }
         }
       }
+
       return (
         <Row
-          scoreValue={1000 - i * 150}
           key={i}
           rowState={
             lockedIn
               ? RowState.LockedIn
-              : i === guesses.length
+              : i === entries.length
               ? RowState.Editing
               : RowState.Pending
           }
-          cluedLetters={guess.letters}
+          cluedLetters={guess.letters ?? []}
         />
       );
     });
@@ -157,15 +152,6 @@ const Game = ({ maxGuesses, game }: GameProps) => {
       <table className={styles['game-table']} ref={tableRef}>
         <tbody>{tableRows}</tbody>
       </table>
-      <p
-        role="alert"
-        style={{
-          userSelect: /https?:/.test(hint) ? 'text' : 'none',
-          whiteSpace: 'pre-wrap',
-        }}
-      >
-        {hint || '\u00a0'}
-      </p>
       <Keyboard letterInfo={letterInfo} onKey={onKey} />
     </div>
   );
