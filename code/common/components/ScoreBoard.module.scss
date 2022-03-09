@@ -19,6 +19,16 @@
       align-items: center;
       width: 90%;
 
+      .score-board-scoring-score-photo {
+        flex: 0 0 50px;
+        height: 50px;
+        margin-left: 40px;
+        display: flex;
+        align-items: flex-end;
+        border-radius: 50%;
+        overflow: hidden;
+      }
+
       .score-board-scoring-score-label {
         flex: 1 1 100%;
         color: #ccc;

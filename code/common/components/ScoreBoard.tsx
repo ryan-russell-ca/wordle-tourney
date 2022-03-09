@@ -1,5 +1,6 @@
 import { GameEntry, GameScore } from '@prisma/client';
 import Image from 'next/image';
+import { UserIdentity } from '../../lib/withIdentity';
 import { Icons } from '../libraries/scoreMessages';
 import { useEntry } from '../providers/EntryProvider';
 import { useMessage } from '../providers/MessageProvider';
@@ -27,11 +28,12 @@ const scoreMessageRender = (score: GameScore, entry: GameEntry | null) => {
   }
 };
 
-const ScoreBoard = () => {
+const ScoreBoard = ({ user }: { user: UserIdentity }) => {
   const [{ totalScore, scores }] = useScore();
   const [{ entriesById }] = useEntry();
   const [{ messages }] = useMessage();
-
+  console.log(user);
+  
   return (
     <div className={styles['score-board-scoring']}>
       <div className={styles['score-board-scoring-header']}>
@@ -48,6 +50,15 @@ const ScoreBoard = () => {
           </div>
           <div className={styles['score-board-scoring-score-value']}>
             {totalScore}
+          </div>
+          <div className={styles['score-board-scoring-score-photo']}>
+            <Image
+              src={user.photos[0].value}
+              width={80}
+              height={80}
+              objectFit="contain"
+              alt="Wordle Battle Tournament"
+            />
           </div>
         </div>
 
