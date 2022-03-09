@@ -4,10 +4,12 @@ import { get } from '../../common/utils/fetch';
 import { addBaseUrl } from '../../common/utils/ssr';
 import GameContainer from '../../common/components/GameContainer';
 import { GameDetailedResponse } from '../api/game/[id]';
+import { serverWrapper, UserIdentity } from '../../lib/withIdentity';
 
-const GameHome: NextPage<{ game: GameDetailedResponse }> = ({
-  game,
-}) => {
+const GameHome: NextPage<{
+  game: GameDetailedResponse;
+  session: UserIdentity;
+}> = ({ game, session }) => {
   return (
     <div>
       <Head>
@@ -16,18 +18,20 @@ const GameHome: NextPage<{ game: GameDetailedResponse }> = ({
         <link rel="icon" href="/favicon.png" />
       </Head>
 
-      <GameContainer game={game} />
+      <GameContainer game={game} user={session} />
     </div>
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const game = await get(
-    addBaseUrl(`/api/game/${context.query.id}`, !!context.req),
+    addBaseUrl(`/api/game/${ctx.query.id}`, !!ctx.req),
   );
 
+  const session = await serverWrapper(ctx);
+
   return {
-    props: { game },
+    props: { game, session },
   };
 };
 
