@@ -8,10 +8,19 @@ const GameIndex: NextPage = () => {
 };
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const response = await post(addBaseUrl('/api/game', !!ctx.req), {});
-  const { id } = await response.json();
+  const user = await serverWrapper(ctx);
 
-  await serverWrapper(ctx);
+  if (!user?.id) {
+    return {
+      redirect: {
+        permanent: false,
+        destination: '/',
+      },
+    };
+  }
+
+  const response = await post(addBaseUrl('/api/game', !!ctx.req), { gid: user.id });
+  const { id } = await response.json();
 
   return {
     redirect: {

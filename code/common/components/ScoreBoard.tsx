@@ -32,7 +32,6 @@ const ScoreBoard = ({ user }: { user: UserIdentity }) => {
   const [{ totalScore, scores }] = useScore();
   const [{ entriesById }] = useEntry();
   const [{ messages }] = useMessage();
-  console.log(user);
   
   return (
     <div className={styles['score-board-scoring']}>

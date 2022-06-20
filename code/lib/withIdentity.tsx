@@ -13,13 +13,14 @@ export interface UserIdentity {
   name: string;
   email: string;
 }
+
 type IdentityProviderProps = Readonly<AppInitialProps> & {
   session: UserIdentity;
 };
+
 const IdentityContext = React.createContext<UserIdentity>(
   null as unknown as UserIdentity,
 );
-
 
 export const LOGIN_PAGE = '/auth/login';
 
@@ -45,17 +46,16 @@ export const serverWrapper = async (
   }
 
   const serializedCookie = Buffer.from(passportSession, 'base64').toString();
-  
+
   const {
     passport: { user },
   }: {
     passport: { user: UserIdentity };
   } = JSON.parse(serializedCookie);
-  console.log(user);
 
   if (!user) {
     redirectToLogin(ctx);
-    return {}; 
+    return {};
   }
 
   const session: UserIdentity = user;
@@ -63,7 +63,6 @@ export const serverWrapper = async (
   return session;
 };
 
-// any is needed to use as JSX element
 const withIdentity = (App: NextApp | any) => {
   return class IdentityProvider extends React.Component<IdentityProviderProps> {
     static displayName = 'IdentityProvider(App)';
